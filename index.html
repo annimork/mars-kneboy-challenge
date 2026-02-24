@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mars Knebøy Challenge</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 760px; }
+    .card { background: #eef3f7; padding: 20px; border-radius: 12px; margin-bottom: 26px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input { width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px; border: 1px solid #bbb; }
+    button { background: #0d6efd; color: #fff; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+    button:hover { background: #0b58cc; }
+    #leaderboard li { padding: 4px 0; }
+    .hint { color: #444; font-size: 14px; margin-top: -6px; }
+    .muted { color: #666; font-size: 14px; }
+    .ok { color: #0a7a2f; }
+    .err { color: #b30000; }
+  </style>
+</head>
+<body>
+
+  <h1>🏋️ Mars Knebøy Challenge</h1>
+  <p class="muted">Video eller selfie er standard. Alternativt kan du laste opp bilde av beina + dagens kodeord.</p>
+
+  <div class="card">
+    <h2>Dagens kodeord</h2>
+    <p id="kodeord" style="font-size: 26px; font-weight: bold; color: #b30000;">…</p>
+    <p class="muted">Skriv kodeordet på en lapp i bildet/videoen – eller si det høyt i videoen.</p>
+  </div>
+
+  <div class="card">
+    <h2>Registrering</h2>
+    <form id="form">
+      <label>Navn</label>
+      <input type="text" name="navn" required placeholder="Fornavn Etternavn" />
+
+      <label>Startantall (kun første dag)</label>
+      <input type="number" name="startreps" min="1" placeholder="F.eks. 10" />
+
+      <label>Dagens repetisjoner</label>
+      <input type="number" name="reps" min="1" required placeholder="F.eks. 17" />
+
+      <label>Last opp dokumentasjon (bilde/video)</label>
+      <input type="file" name="media" accept="image/*,video/*" required />
+
+      <label>Hva er dagens kodeord?</label>
+      <input type="text" name="kodeord" required placeholder="Skriv akkurat ordet som vises over" />
+
+      <input type="hidden" name="dato" id="dato" />
+      <button type="submit">Send inn</button>
+    </form>
+    <p id="status" class="muted"></p>
+  </div>
+
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <p class="muted">Viser totalt antall dager registrert per deltaker (ikke reps).</p>
+    <ul id="leaderboard"><li>Laster inn…</li></ul>
+  </div>
+
+  <div class="card">
+    <h2>Ukentlige challenges</h2>
+    <ul>
+      <li>Uke 1: Gjør knebøy på et morsomt sted 🌍</li>
+      <li>Uke 2: Tren med en kollega 👥</li>
+      <li>Uke 3: Bruk en kreativ rekvisitt 🎩</li>
+      <li>Uke 4: Knebøy til musikk – syng med 🎶</li>
+    </ul>
+  </div>
+
+<script>
+/** MARITIME KODEORD — deterministisk per dato */
+const maritimeKodeord = [
+  "ANKER","BABORD","STYRBORD","STORM","FENDER","KAI","BØLGE","RIGG","MANN-OVER-BORD","SKIPPER",
+  "MASKIN","BRO","STEVN","SJØMIL","LOGG","DEKK","SJØFOLK","TROSS","KJETTING","KRABBESKJÆR",
+  "MØRINGSBUKTA","LENSEPUMPE","HAVFRUE","BRYGGE","FJORD","SUND","SANDANKER","FARTØY","BAUG",
+  "AKTER","LANDEMERKE","KOMPASS","KOKK","KYST","REDERI","HAVN","RÅSEIL","STAKKAVIK","KLYS",
+  "SJØKART","DREGG","HØYVANN","LAVVANN","SJØULV","KAPTEIN","SIKKERHET","VINDROSE","REDSKAP",
+  "FISKER","SLEP","GJØL","HOLME","SKJÆR","SJØSPRØYT","TÅKE","RADAR","VAKT"
+];
+
+function kodeordForDato(d) {
+  // d: Date-objekt
+  const y = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
+  // Enkel hash for stabil indeks pr. dag:
+  const seed = (y*10000 + m*100 + day);
+  const idx  = seed % maritimeKodeord.length;
+  return maritimeKodeord[idx];
+}
+
+const idag = new Date();
+document.getElementById('kodeord').textContent = kodeordForDato(idag);
+
+/** Sett dato automatisk i ISO-format */
+document.getElementById('dato').value = new Date().toISOString().split('T')[0];
+
+/** Send til Apps Script */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyECzcsj-h8lwHwq5hJgqPwlXsFQmwIHEctNzSzLkl3Kgny4WHDTFy1a73cgR4RE6Ec/exec'; // <- BYTT UT
+
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('status');
+  status.className = 'muted';
+  status.textContent = 'Sender inn…';
+
+  const formEl = e.currentTarget;
+  const data = new FormData(formEl);
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: data
+    });
+    if (!res.ok) throw new Error('Nettverksfeil');
+    const json = await res.json();
+    if (json.result !== 'success') throw new Error(json.message || 'Ukjent feil');
+
+    status.className = 'ok';
+    status.textContent = 'Innsending mottatt! 💪';
+    formEl.reset();
+    document.getElementById('dato').value = new Date().toISOString().split('T')[0];
+    loadLeaderboard();
+  } catch (err) {
+    status.className = 'err';
+    status.textContent = 'Kunne ikke sende inn: ' + err.message;
+  }
+});
+
+/** Hent leaderboard (kun dager) – bytt til ?leaderboard=full for lodd også */
+async function loadLeaderboard() {
+  const list = document.getElementById('leaderboard');
+  list.innerHTML = '<li>Laster inn…</li>';
+  try {
+    const res = await fetch(SCRIPT_URL + '?leaderboard=1');
+    const data = await res.json();
+    list.innerHTML = '';
+    data.forEach(row => {
+      const li = document.createElement('li');
+      li.textContent = `${row.navn}: ${row.dager} dager`;
+      list.appendChild(li);
+    });
+    if (data.length === 0) list.innerHTML = '<li>Ingen registreringer ennå</li>';
+  } catch (e) {
+    list.innerHTML = '<li>Kunne ikke laste leaderboard</li>';
+  }
+}
+loadLeaderboard();
+</script>
+
+</body>
+</html>
