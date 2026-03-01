@@ -1,153 +1,353 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mars Knebøy Challenge</title>
+  <title>30-dagers knebøychallenge</title>
+  <!-- Nøytral display-font til overskrifter og tall -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; max-width: 760px; }
-    .card { background: #eef3f7; padding: 20px; border-radius: 12px; margin-bottom: 26px; }
-    label { display: block; margin-top: 12px; font-weight: bold; }
-    input { width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px; border: 1px solid #bbb; }
-    button { background: #0d6efd; color: #fff; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-    button:hover { background: #0b58cc; }
-    #leaderboard li { padding: 4px 0; }
-    .hint { color: #444; font-size: 14px; margin-top: -6px; }
-    .muted { color: #666; font-size: 14px; }
-    .ok { color: #0a7a2f; }
-    .err { color: #b30000; }
+    :root{
+      /* Farger & fonter */
+      --bg:#0c111b; --card:#101827; --text:#eef2f7; --muted:#94a3b8;
+      --title-font:'Bebas Neue', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+      /* MARITIM PALETT (blå/teal) */
+      --tile-red-1:#0f4c75;      /* base */
+      --tile-red-2:#0f4c75;      /* base */
+      --tile-red-1-hover:#0b3c5d;
+      --tile-red-2-hover:#0b3c5d;
+      --tile-red-dim-1:#0f4c7580; /* låst lysere */
+      --tile-red-dim-2:#0a2233;   /* låst mørkere */
+      --tile-border:#0a3a57;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      -webkit-text-size-adjust:100%;
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text);
+      /* Diskret gradient-bakgrunn */
+      background: linear-gradient(180deg, #0c111b 0%, #0f172a 100%);
+      min-height:100dvh;
+    }
+
+    /* Header med tittel til venstre og logo til høyre */
+    header{
+      position:relative; z-index:1;
+      padding:14px 0 8px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .container{width:min(1100px,92%);margin:0 auto}
+    .header-row{
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+    }
+    .title-wrap{
+      display:flex; align-items:center; gap:12px; min-width:0;
+    }
+    h1{
+      font-family:var(--title-font);
+      font-size:2.6rem; margin:0; letter-spacing:.5px; line-height:1;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .brand{
+      display:inline-flex; align-items:center; gap:10px; text-decoration:none;
+    }
+    .brand img{
+      height:46px; width:auto; display:block; object-fit:contain; filter:brightness(.98) contrast(1.05);
+    }
+    /* Valgfri logo-tekst ved siden av bildet (skjul/vis som du vil) */
+    .brand span{
+      color:var(--muted); font-weight:600; letter-spacing:.3px; display:none;
+    }
+
+    header p{color:var(--muted); margin:.35rem 0 0}
+    @media (min-width:768px){
+      h1{font-size:3rem}
+      .brand img{height:52px}
+      .brand span{display:inline}
+    }
+
+    /* Feilbanner */
+    .banner{display:none;background:#7c2d12;color:#fff;padding:12px 16px;border-radius:10px;margin:14px auto;max-width:900px;text-align:center;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:.95rem}
+
+    /* Layout hovedområde */
+    main.container{padding:22px clamp(16px,4vw,28px) 80px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;padding:20px 0}
+    @media (max-width:1024px){.grid{grid-template-columns:repeat(3,1fr)}}
+    @media (max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:380px){.grid{grid-template-columns:1fr}}
+
+    /* Luker (fliser) */
+    .card{
+      position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      aspect-ratio:1/1;border-radius:22px;border:1.5px solid var(--tile-border);
+      background:linear-gradient(145deg,var(--tile-red-1),var(--tile-red-2));
+      box-shadow:0 10px 24px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.06), inset 0 -1px 0 rgba(0,0,0,.25);
+      transition:transform .18s ease, box-shadow .18s ease, background .18s ease;cursor:pointer
+    }
+    .card.locked{
+      background:linear-gradient(145deg,var(--tile-red-dim-1),var(--tile-red-dim-2));
+      filter:saturate(.95);cursor:not-allowed
+    }
+    @media (hover:hover){
+      .card:not(.locked):hover{transform:scale(1.02);box-shadow:0 14px 36px rgba(0,0,0,.35);
+        background:linear-gradient(145deg,var(--tile-red-1-hover),var(--tile-red-2-hover))}
+    }
+
+    /* Ikon (status) */
+    .status{display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+    .status svg{width:28px;height:28px;stroke:rgba(255,255,255,.95);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+    .card.locked .status svg{stroke:rgba(255,255,255,.7)}
+
+    /* Tallet */
+    .num{font-family:var(--title-font);font-size:2.8rem;line-height:1;color:#fff;margin:6px 0 0 0;letter-spacing:.5px;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+    .card.locked .num{opacity:.6;filter:brightness(.85)}
+
+    .info-wrap{display:flex;justify-content:center;margin-top:10px;}
+    .info-btn{width:40px;height:40px;border-radius:999px;border:1.5px solid var(--muted);background:rgba(12,17,27,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, background .15s ease;}
+    .info-btn-inner{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:13px;font-weight:600;color:rgba(226,232,240,.9);}
+    @media (hover:hover){.info-btn:hover{transform:translateY(-1px);background:rgba(15,23,42,.8);box-shadow:0 6px 14px rgba(0,0,0,.6);}}
+    .info-btn:focus-visible{outline:3px solid #22c55e;outline-offset:2px;}
+    .debug-indicator{margin-top:6px;text-align:center;font-size:.8rem;color:#f97316;opacity:.9;display:none}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.55);padding:16px;z-index:10}
+    .modal.hidden{display:none}
+    .modal-content{background:var(--card);border:1px solid #263453;border-radius:18px;width:min(720px,96%);padding:18px;position:relative;color:var(--text);display:flex;flex-direction:column;gap:12px;max-height:90dvh;overflow:auto;box-shadow:0 18px 40px rgba(0,0,0,.6)}
+    .modal-header{display:flex;align-items:center;justify-content:center}
+    .modal-banner{width:100%;border-radius:14px;padding:12px 16px;background:linear-gradient(145deg,var(--tile-red-1),var(--tile-red-2));position:relative;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.35);margin-bottom:4px}
+    .modal-title{position:relative;z-index:1;font-family:var(--title-font);font-size:1.8rem;margin:0;text-align:center;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+    @media (max-width:420px){.modal-title{font-size:1.6rem}}
+    .modal-text{font-size:1rem;line-height:1.5;margin:0}
+    .modal-text p{margin:0 0 0.7em;}
+    .btns{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;justify-content:flex-start}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;color:#fff;text-decoration:none;font-weight:700;border:none;cursor:pointer}
+    .btn svg{width:18px;height:18px;fill:currentColor}
+    .btn-apple{background:#0ea5e9}  /* "Send inn" (Forms) – blå knapp */
+    .btn-spotify{background:#22c55e} /* "Se øvelsen" (video) – grønn knapp */
+    .btn-secondary{background:#374151}
+    .btn:focus-visible{outline:3px solid #22c55e;outline-offset:2px}
   </style>
 </head>
 <body>
+  <header>
+    <div class="container header-row">
+      <div class="title-wrap">
+        <h1>30-dagers knebøychallenge</h1>
+      </div>
+      <!-- Logo til høyre: pek til din fil (f.eks. assets/logo.png) -->
+      <a class="brand" href="#" aria-label="Gå til hovedside">
+        <img src="assets/logo.png" alt="Firma-logo" />
+        <!-- <span>Bedriftsnavn</span> -->
+      </a>
+    </div>
+    <!-- Undertekst – du sa du vil endre selv; lot den stå kort -->
+    <div class="container">
+      <p>En ny utfordring hver dag! Jo flere luker du fullfører, jo større vinnersjanse har du.</p>
+    </div>
+  </header>
 
-  <h1>🏋️ Mars Knebøy Challenge</h1>
-  <p class="muted">Video eller selfie er standard. Alternativt kan du laste opp bilde av beina + dagens kodeord.</p>
-
-  <div class="card">
-    <h2>Dagens kodeord</h2>
-    <p id="kodeord" style="font-size: 26px; font-weight: bold; color: #b30000;">…</p>
-    <p class="muted">Skriv kodeordet på en lapp i bildet/videoen – eller si det høyt i videoen.</p>
+  <div class="info-wrap">
+    <button id="info-btn" class="info-btn" type="button" aria-label="Informasjon om utfordringen">
+      <span class="info-btn-inner">Info</span>
+    </button>
   </div>
 
-  <div class="card">
-    <h2>Registrering</h2>
-    <form id="form">
-      <label>Navn</label>
-      <input type="text" name="navn" required placeholder="Fornavn Etternavn" />
-
-      <label>Startantall (kun første dag)</label>
-      <input type="number" name="startreps" min="1" placeholder="F.eks. 10" />
-
-      <label>Dagens repetisjoner</label>
-      <input type="number" name="reps" min="1" required placeholder="F.eks. 17" />
-
-      <label>Last opp dokumentasjon (bilde/video)</label>
-      <input type="file" name="media" accept="image/*,video/*" required />
-
-      <label>Hva er dagens kodeord?</label>
-      <input type="text" name="kodeord" required placeholder="Skriv akkurat ordet som vises over" />
-
-      <input type="hidden" name="dato" id="dato" />
-      <button type="submit">Send inn</button>
-    </form>
-    <p id="status" class="muted"></p>
+  <div id="debug-indicator" class="debug-indicator" aria-hidden="true">
+    TESTMODUS – alle luker er åpne nå
   </div>
 
-  <div class="card">
-    <h2>Leaderboard</h2>
-    <p class="muted">Viser totalt antall dager registrert per deltaker (ikke reps).</p>
-    <ul id="leaderboard"><li>Laster inn…</li></ul>
+  <!-- Feil-/statusbanner (midtstilt) -->
+  <div id="err" class="banner"></div>
+
+  <main class="container">
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <!-- Modal for åpne luker -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-banner">
+          <h2 id="modal-title" class="modal-title"></h2>
+        </div>
+      </div>
+      <p id="modal-text" class="modal-text"></p>
+      <div class="btns">
+        <a id="btn-apple" class="btn btn-apple" target="_blank" rel="noopener"
+           aria-label="Send inn dagens knebøy (Google Forms)">
+          Send inn
+        </a>
+        <a id="btn-spotify" class="btn btn-spotify" target="_blank" rel="noopener"
+           aria-label="Se øvelsen (video)">
+          Se øvelsen her
+        </a>
+        <button id="btn-close" class="btn btn-secondary" type="button">Lukk</button>
+      </div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Ukentlige challenges</h2>
-    <ul>
-      <li>Uke 1: Gjør knebøy på et morsomt sted 🌍</li>
-      <li>Uke 2: Tren med en kollega 👥</li>
-      <li>Uke 3: Bruk en kreativ rekvisitt 🎩</li>
-      <li>Uke 4: Knebøy til musikk – syng med 🎶</li>
-    </ul>
+  <!-- Info-modal -->
+  <div id="info-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Om utfordringen</h2>
+      </div>
+      <p id="info-text" class="modal-text"></p>
+      <div class="btns">
+        <button id="info-close" class="btn btn-secondary" type="button">Lukk</button>
+      </div>
+    </div>
   </div>
 
-<script>
-/** MARITIME KODEORD — deterministisk per dato */
-const maritimeKodeord = [
-  "ANKER","BABORD","STYRBORD","STORM","FENDER","KAI","BØLGE","RIGG","MANN-OVER-BORD","SKIPPER",
-  "MASKIN","BRO","STEVN","SJØMIL","LOGG","DEKK","SJØFOLK","TROSS","KJETTING","KRABBESKJÆR",
-  "MØRINGSBUKTA","LENSEPUMPE","HAVFRUE","BRYGGE","FJORD","SUND","SANDANKER","FARTØY","BAUG",
-  "AKTER","LANDEMERKE","KOMPASS","KOKK","KYST","REDERI","HAVN","RÅSEIL","STAKKAVIK","KLYS",
-  "SJØKART","DREGG","HØYVANN","LAVVANN","SJØULV","KAPTEIN","SIKKERHET","VINDROSE","REDSKAP",
-  "FISKER","SLEP","GJØL","HOLME","SKJÆR","SJØSPRØYT","TÅKE","RADAR","VAKT"
-];
+  <script>
+    // --------- Konstanter ----------
+    const DEBUG_ALWAYS_OPEN = true; // Sett til false når du går "live"
+    const CHALLENGE_MONTH = 2;           // 0=jan, 1=feb, 2=mars
+    const CHALLENGE_MONTH_NAME = 'mars'; // brukt i fallback-tittel
+    const CHALLENGE_DAYS = 30;           // 30 luker (challenge-lengde)
 
-function kodeordForDato(d) {
-  // d: Date-objekt
-  const y = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
-  // Enkel hash for stabil indeks pr. dag:
-  const seed = (y*10000 + m*100 + day);
-  const idx  = seed % maritimeKodeord.length;
-  return maritimeKodeord[idx];
-}
+    // --------- Datostyring ----------
+    // Kun dagens og gårsdagens luke åpnes når DEBUG_ALWAYS_OPEN = false
+    function isDoorOpen(day){
+      if (DEBUG_ALWAYS_OPEN) return true;
+      const now = new Date();
+      const m = now.getMonth();
+      const d = now.getDate();
+      if (m !== CHALLENGE_MONTH) return false;   // aktiv i mars
+      return (day === d) || (day === d - 1 && d > 1);
+    }
 
-const idag = new Date();
-document.getElementById('kodeord').textContent = kodeordForDato(idag);
+    // --------- DOM elementer ----------
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalText = document.getElementById('modal-text');
+    const btnApple = document.getElementById('btn-apple');     // "Send inn" (Forms)
+    const btnSpotify = document.getElementById('btn-spotify'); // "Se øvelsen" (video)
+    const btnClose = document.getElementById('btn-close');
+    const infoModal = document.getElementById('info-modal');
+    const infoText = document.getElementById('info-text');
+    const infoBtn = document.getElementById('info-btn');
+    const infoClose = document.getElementById('info-close');
+    const debugIndicator = document.getElementById('debug-indicator');
+    if (DEBUG_ALWAYS_OPEN && debugIndicator) { debugIndicator.style.display = 'block'; }
 
-/** Sett dato automatisk i ISO-format */
-document.getElementById('dato').value = new Date().toISOString().split('T')[0];
+    // Beholdt informasjonstekst; du kan endre denne.
+    const INFO_TEXT = `Velkommen til 30-dagers knebøychallenge!
+Hver dag får du en liten utfordring. Dokumentér gjennomføringen – f.eks. med video, bilde eller skjema. Lykke til!`;
 
-/** Send til Apps Script */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyECzcsj-h8lwHwq5hJgqPwlXsFQmwIHEctNzSzLkl3Kgny4WHDTFy1a73cgR4RE6Ec/exec'; // <- BYTT UT
+    // --------- Hjelpefunksjoner ----------
+    function formatModalText(raw){
+      if(!raw) return '';
+      const esc = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return esc.split(/\n\s*\n/).map(p => '<p>' + p.replace(/\n/g,'<br>') + '</p>').join('');
+    }
 
-document.getElementById('form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const status = document.getElementById('status');
-  status.className = 'muted';
-  status.textContent = 'Sender inn…';
+    function showFriendlyError(){
+      const el = document.getElementById('err');
+      el.textContent = 'Oisann, noe gikk galt ved lasting av data. Sjekk filen data/days.json.';
+      el.style.display = 'block';
+    }
 
-  const formEl = e.currentTarget;
-  const data = new FormData(formEl);
+    function placeholderDays(){
+      return Array.from({length:CHALLENGE_DAYS}, (_,i)=>({
+        title: `${i+1}. ${CHALLENGE_MONTH_NAME}`,
+        text: '',
+        form: '',
+        video: ''
+      }));
+    }
 
-  try {
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: data
-    });
-    if (!res.ok) throw new Error('Nettverksfeil');
-    const json = await res.json();
-    if (json.result !== 'success') throw new Error(json.message || 'Ukjent feil');
+    const DATA_URLS = ['data/days.json','./data/days.json'];
 
-    status.className = 'ok';
-    status.textContent = 'Innsending mottatt! 💪';
-    formEl.reset();
-    document.getElementById('dato').value = new Date().toISOString().split('T')[0];
-    loadLeaderboard();
-  } catch (err) {
-    status.className = 'err';
-    status.textContent = 'Kunne ikke sende inn: ' + err.message;
-  }
-});
+    async function fetchJson(url){
+      const res = await fetch(url,{cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      return res.json();
+    }
 
-/** Hent leaderboard (kun dager) – bytt til ?leaderboard=full for lodd også */
-async function loadLeaderboard() {
-  const list = document.getElementById('leaderboard');
-  list.innerHTML = '<li>Laster inn…</li>';
-  try {
-    const res = await fetch(SCRIPT_URL + '?leaderboard=1');
-    const data = await res.json();
-    list.innerHTML = '';
-    data.forEach(row => {
-      const li = document.createElement('li');
-      li.textContent = `${row.navn}: ${row.dager} dager`;
-      list.appendChild(li);
-    });
-    if (data.length === 0) list.innerHTML = '<li>Ingen registreringer ennå</li>';
-  } catch (e) {
-    list.innerHTML = '<li>Kunne ikke laste leaderboard</li>';
-  }
-}
-loadLeaderboard();
-</script>
+    async function loadDays(){
+      for(const url of DATA_URLS){
+        try{
+          const data = await fetchJson(url);
+          if(Array.isArray(data) && data.length){
+            const base = placeholderDays();
+            // Støtt både nye nøkler (form/video) og gamle (apple/spotify) for kompatibilitet
+            const merged = base.map((d,idx)=>{
+              const src = data[idx] || {};
+              const form = src.form ?? src.apple ?? '';
+              const video = src.video ?? src.spotify ?? '';
+              return { ...d, ...src, form, video };
+            });
+            return merged.slice(0, CHALLENGE_DAYS);
+          }
+        }catch(e){/* prøv neste */}
+      }
+      showFriendlyError();
+      return placeholderDays();
+    }
 
+    function openModal(day,item){
+      const title = item && (item.title || item.date) ? (item.title || item.date) : `${day}. ${CHALLENGE_MONTH_NAME}`;
+      modalTitle.textContent = title;
+      modalText.innerHTML = formatModalText(item && item.text ? item.text : '');
+      if(item && (item.form || item.apple)){
+        btnApple.href = item.form || item.apple;
+        btnApple.style.display = 'inline-flex';
+      }else{
+        btnApple.style.display = 'none';
+      }
+      if(item && (item.video || item.spotify)){
+        btnSpotify.href = item.video || item.spotify;
+        btnSpotify.style.display = 'inline-flex';
+      }else{
+        btnSpotify.style.display = 'none';
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function openInfo(){
+      infoText.innerHTML = formatModalText(INFO_TEXT);
+      infoModal.classList.remove('hidden');
+    }
+
+    function render(days){
+      const grid=document.getElementById('grid');
+      grid.innerHTML='';
+      for(let i=0;i<CHALLENGE_DAYS;i++){
+        const d = days[i] || { title:`${i+1}. ${CHALLENGE_MONTH_NAME}` };
+        const day = i+1;
+        const card=document.createElement('button');
+        card.className = 'card' + (isDoorOpen(day) ? '' : ' locked');
+        card.type='button';
+        const icon = isDoorOpen(day)
+          ? `<span class='status' aria-hidden='true'><svg viewBox='0 0 24 24'><path d='M12 2c-.8 0-1.4.6-1.4 1.4v1.6c-2.5.6-4.6 2.8-4.6 5.5 0 3.4-1.4 5-2 5.4h16c-.6-.4-2-2-2-5.4 0-2.7-2.1-4.9-4.6-5.5V3.4c0-.8-.6-1.4-1.4-1.4zM12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2z'/></svg></span>`
+          : `<span class='status' aria-hidden='true'><svg viewBox='0 0 24 24'><rect x='5' y='10' width='14' height='10' rx='2'/><path d='M8 10V8a4 4 0 0 1 8 0v2'/></svg></span>`;
+        card.innerHTML = `${icon}<span class='num'>${day}</span>`;
+        if(!isDoorOpen(day)){
+          card.disabled = true;
+        }else{
+          card.addEventListener('click',()=>openModal(day,d));
+        }
+        grid.appendChild(card);
+      }
+    }
+
+    // Lukk/modaler
+    document.getElementById('btn-close').addEventListener('click',()=>modal.classList.add('hidden'));
+    modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
+    infoBtn.addEventListener('click', openInfo);
+    infoClose.addEventListener('click', ()=>infoModal.classList.add('hidden'));
+    infoModal.addEventListener('click', e=>{ if(e.target===infoModal) infoModal.classList.add('hidden'); });
+
+    // Init
+    (async()=>{
+      const days=await loadDays();
+      render(days);
+    })();
+  </script>
 </body>
 </html>
